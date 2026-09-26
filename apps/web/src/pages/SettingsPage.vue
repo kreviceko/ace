@@ -76,6 +76,24 @@
             <q-item-label caption>{{ store.engine.detail?.acestep_api_url || 'http://127.0.0.1:8001' }}</q-item-label>
           </q-item-section>
         </q-item>
+
+        <q-item>
+          <q-item-section>
+            <q-item-label>SpaceXAI lyric assist</q-item-label>
+            <q-item-label caption>
+              {{ store.engine.detail?.features?.lyric_assist ? 'XAI_API_KEY detected' : 'Set XAI_API_KEY in repo .env' }}
+            </q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item>
+          <q-item-section>
+            <q-item-label>Demucs stems</q-item-label>
+            <q-item-label caption>
+              {{ store.engine.detail?.features?.demucs_stems ? 'Installed' : 'Run: uv sync --extra stems' }}
+            </q-item-label>
+          </q-item-section>
+        </q-item>
       </q-list>
 
       <q-banner dense rounded class="bg-grey-10 text-grey-4 q-mb-md">

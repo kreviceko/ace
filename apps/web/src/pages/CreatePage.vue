@@ -29,18 +29,36 @@
 
           <!-- Remix / Edit: source audio first -->
           <div v-if="store.needsSource" class="q-mb-md">
+            <q-banner
+              v-if="store.mode === 'edit' && store.editSourceUrl && !store.srcFile"
+              dense
+              rounded
+              class="bg-grey-10 text-grey-4 q-mb-sm"
+            >
+              Using library audio for Edit. Upload a different file to override.
+            </q-banner>
             <q-file
               v-model="store.srcFile"
               outlined
               dark
-              label="Source MP3 / audio (required)"
+              :label="store.mode === 'edit' && store.editSourceUrl ? 'Replace source audio (optional)' : 'Source MP3 / audio (required)'"
               accept="audio/*,.mp3,.wav,.flac,.m4a"
               clearable
               max-files="1"
+              @update:model-value="onSrcFile"
             >
               <template #prepend><q-icon name="upload_file" /></template>
               <template #hint>Your melody sketch or demo — structure is preserved in Remix</template>
             </q-file>
+
+            <div v-if="store.mode === 'edit' && waveformUrl" class="q-mt-md">
+              <div class="text-caption text-grey-5 q-mb-xs">Waveform — drag the region to choose what to repaint</div>
+              <WaveformEditor
+                :url="waveformUrl"
+                v-model:start="store.form.repainting_start"
+                v-model:end="store.form.repainting_end"
+              />
+            </div>
           </div>
 
           <q-input
@@ -210,6 +228,9 @@
               <div v-if="store.mode === 'edit'" class="col-6">
                 <q-input v-model.number="store.form.repainting_end" type="number" outlined dark dense label="Edit end (0=end)" />
               </div>
+              <div v-if="store.mode === 'edit'" class="col-12 text-caption text-grey-5">
+                Prefer the waveform region above; these numbers stay in sync.
+              </div>
 
               <div v-if="store.mode === 'custom'" class="col-12">
                 <q-file
@@ -306,14 +327,43 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useStudioStore } from '@/stores/studio'
 import { api } from '@/api/client'
 import StructureTags from '@/components/StructureTags.vue'
+import WaveformEditor from '@/components/WaveformEditor.vue'
 
 const $q = useQuasar()
 const store = useStudioStore()
+const localObjectUrl = ref('')
+
+const waveformUrl = computed(() => localObjectUrl.value || store.editSourceUrl || '')
+
+function revokeLocalUrl() {
+  if (localObjectUrl.value) {
+    URL.revokeObjectURL(localObjectUrl.value)
+    localObjectUrl.value = ''
+  }
+}
+
+function onSrcFile(val) {
+  revokeLocalUrl()
+  store.editSourceUrl = ''
+  const file = Array.isArray(val) ? val[0] : val
+  if (file instanceof File) {
+    localObjectUrl.value = URL.createObjectURL(file)
+  }
+}
+
+watch(
+  () => store.mode,
+  (mode) => {
+    if (mode !== 'edit') return
+  },
+)
+
+onBeforeUnmount(revokeLocalUrl)
 
 const modeOptions = [
   { label: 'Remix MP3', value: 'remix' },

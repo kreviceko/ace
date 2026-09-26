@@ -19,8 +19,17 @@ export const api = {
   library: () => request('/api/library'),
   getSong: (id) => request(`/api/library/${id}`),
   deleteSong: (id) => request(`/api/library/${id}`, { method: 'DELETE' }),
+  exportZipUrl: (id) => `${BASE}/api/library/${id}/export.zip`,
+  stemsZipUrl: (id) => `${BASE}/api/library/${id}/stems.zip`,
+  separateStems: (id) => request(`/api/library/${id}/stems`, { method: 'POST' }),
   formatLyrics: (payload) =>
     request('/api/lyrics/format', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  assistLyrics: (payload) =>
+    request('/api/lyrics/assist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

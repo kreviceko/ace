@@ -51,6 +51,7 @@ export const useStudioStore = defineStore('studio', {
     },
     srcFile: null,
     refFile: null,
+    editSourceUrl: '',
     generating: false,
     jobStatus: '',
     lastResult: null,
@@ -116,7 +117,9 @@ export const useStudioStore = defineStore('studio', {
         }
       }
       if (this.mode === 'edit') {
-        if (!asFile(this.srcFile)) return 'Upload source audio for Edit.'
+        if (!asFile(this.srcFile) && !this.editSourceUrl) {
+          return 'Upload source audio for Edit (or open a library song via Edit slice).'
+        }
       }
       if (this.form.use_format && !this.lmAvailable) {
         return 'Format with LM needs ACESTEP_INIT_LLM=true and an online engine.'
@@ -176,8 +179,14 @@ export const useStudioStore = defineStore('studio', {
           allow_lm: this.lmAvailable,
         }
         const files = {}
-        const src = asFile(this.srcFile)
+        let src = asFile(this.srcFile)
         const ref = asFile(this.refFile)
+        if (!src && this.editSourceUrl && this.mode === 'edit') {
+          const resp = await fetch(this.editSourceUrl)
+          if (!resp.ok) throw new Error('Could not load library audio for Edit')
+          const blob = await resp.blob()
+          src = new File([blob], `edit-source-${Date.now()}.mp3`, { type: blob.type || 'audio/mpeg' })
+        }
         if (src) files.src_audio = src
         if (ref) files.reference_audio = ref
 

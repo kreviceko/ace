@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     app_port: int = 8787
     xai_api_key: str = ""
     xai_base_url: str = "https://api.x.ai/v1"
-    xai_model: str = "grok-4-1-fast-non-reasoning"
+    xai_model: str = "grok-4.7"
     data_dir: str = str(DATA_ROOT)
     poll_interval_sec: float = 1.5
     poll_timeout_sec: float = 600.0

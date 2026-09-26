@@ -108,10 +108,10 @@ For native stem extract / lego / complete you need a **base** DiT (`acestep-v15-
 - [x] Quasar dark studio (Create / Library / Lyrics / Settings)
 - [x] Simple / Custom / Remix / Edit API + UI
 - [x] Format lyrics + library save/download
-- [ ] ZIP export packs + LRC
-- [ ] Interactive lyric assist (SpaceXAI)
-- [ ] Stem export (Demucs + ACE extract)
-- [ ] Waveform Edit mask UI
+- [x] ZIP export packs (+ LRC when available)
+- [x] Interactive lyric assist (SpaceXAI)
+- [x] Stem export (Demucs)
+- [x] Waveform Edit region UI
 
 ## License
 

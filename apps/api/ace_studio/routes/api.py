@@ -13,8 +13,11 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from ace_studio.ace_client import AceStepClient, AceStepError, build_create_fields
-from ace_studio.config import get_settings, read_acestep_env
+from ace_studio.config import ensure_data_dirs, get_settings, read_acestep_env
+from ace_studio.export_pack import build_export_zip
 from ace_studio.library import Library
+from ace_studio.lyric_assist import assist_available, run_assist
+from ace_studio.stems import demucs_available, separate_stems, zip_stems
 
 ENGINE_DOWN_MSG = (
     "ACE-Step engine stopped or became unreachable while handling the job. "
@@ -34,6 +37,14 @@ class FormatRequest(BaseModel):
     bpm: int | None = None
     key: str | None = None
     time_signature: str | None = None
+
+
+class AssistRequest(BaseModel):
+    action: str = "continue_verse"
+    lyrics: str = ""
+    concept: str = ""
+    line: str = ""
+    style: str = ""
 
 
 def _truthy(value: str | None) -> bool:
@@ -84,6 +95,10 @@ async def health() -> dict[str, Any]:
         "ace": ace,
         "library_count": len(Library(settings).list(1000)),
         "acestep_api_url": settings.acestep_api_url,
+        "features": {
+            "lyric_assist": assist_available(settings),
+            "demucs_stems": demucs_available(),
+        },
         "models": {
             "configured_dit": configured_dit,
             "configured_lm": configured_lm,
@@ -176,6 +191,75 @@ async def format_lyrics(body: FormatRequest) -> dict[str, Any]:
         )
     except AceStepError as exc:
         raise HTTPException(502, str(exc)) from exc
+    except (httpx.HTTPError, OSError) as exc:
+        raise HTTPException(502, f"{ENGINE_DOWN_MSG} ({exc})") from exc
+
+
+@router.post("/lyrics/assist")
+async def lyrics_assist(body: AssistRequest) -> dict[str, Any]:
+    allowed = {"rhyme", "rewrite_line", "continue_verse", "suggest_hooks", "polish"}
+    if body.action not in allowed:
+        raise HTTPException(400, f"action must be one of {sorted(allowed)}")
+    try:
+        return run_assist(
+            action=body.action,  # type: ignore[arg-type]
+            lyrics=body.lyrics,
+            concept=body.concept,
+            line=body.line,
+            style=body.style,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(502, f"Lyric assist failed: {exc}") from exc
+
+
+@router.get("/library/{item_id}/export.zip")
+async def export_library_zip(item_id: str) -> FileResponse:
+    library = Library()
+    item = library.get(item_id)
+    if not item:
+        raise HTTPException(404, "Song not found")
+    ensure_data_dirs()
+    dest = Path(library.root) / "exports" / f"{item_id}.zip"
+    try:
+        build_export_zip(item, dest)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    return FileResponse(dest, media_type="application/zip", filename=f"{item.title or item_id}.zip")
+
+
+@router.post("/library/{item_id}/stems")
+async def create_stems(item_id: str) -> dict[str, Any]:
+    library = Library()
+    item = library.get(item_id)
+    if not item:
+        raise HTTPException(404, "Song not found")
+    try:
+        stems = separate_stems(Path(item.audio_path), song_id=item_id)
+        zip_path = Path(library.root) / "exports" / f"{item_id}-stems.zip"
+        zip_stems(stems, zip_path)
+    except RuntimeError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(502, f"Stem separation failed: {exc}") from exc
+    return {
+        "ok": True,
+        "stems": sorted(stems.keys()),
+        "download": f"/api/library/{item_id}/stems.zip",
+    }
+
+
+@router.get("/library/{item_id}/stems.zip")
+async def download_stems_zip(item_id: str) -> FileResponse:
+    library = Library()
+    item = library.get(item_id)
+    if not item:
+        raise HTTPException(404, "Song not found")
+    path = Path(library.root) / "exports" / f"{item_id}-stems.zip"
+    if not path.exists():
+        raise HTTPException(404, "Stems zip not found — run Separate stems first")
+    return FileResponse(path, media_type="application/zip", filename=f"{item.title or item_id}-stems.zip")
 
 
 @router.post("/create")
