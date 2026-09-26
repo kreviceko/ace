@@ -29,9 +29,12 @@
 
         <div class="row items-center q-gutter-sm q-mr-md">
           <span class="engine-dot" :class="store.engine.ok ? 'ok' : 'down'" />
-          <span class="text-caption text-grey-4">
-            {{ store.engine.loading ? 'Checking…' : store.engine.ok ? 'Engine online' : 'Engine offline' }}
-          </span>
+          <div class="column" style="line-height: 1.15">
+            <span class="text-caption text-grey-4">
+              {{ store.engine.loading ? 'Checking…' : store.engine.ok ? 'Engine online' : 'Engine offline' }}
+            </span>
+            <span v-if="modelCaption" class="text-caption text-grey-6">{{ modelCaption }}</span>
+          </div>
           <q-btn flat dense round icon="refresh" @click="store.refreshHealth()" />
         </div>
       </q-toolbar>
@@ -44,10 +47,20 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useStudioStore } from '@/stores/studio'
 
 const store = useStudioStore()
+
+const modelCaption = computed(() => {
+  const m = store.engine.detail?.models
+  if (!m) return ''
+  const dit = m.loaded_dit || m.configured_dit || m.default_model
+  if (!dit) return ''
+  const state = m.models_initialized ? 'loaded' : 'configured'
+  return `${state}: ${dit}`
+})
+
 onMounted(() => {
   store.refreshHealth()
   store.refreshLibrary().catch(() => {})

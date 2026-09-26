@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from ace_studio.ace_client import AceStepClient, AceStepError, build_create_fields
-from ace_studio.config import get_settings
+from ace_studio.config import get_settings, read_acestep_env
 from ace_studio.library import Library
 
 router = APIRouter(prefix="/api")
@@ -28,16 +28,68 @@ class FormatRequest(BaseModel):
     time_signature: str | None = None
 
 
+def _truthy(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 @router.get("/health")
 async def health() -> dict[str, Any]:
     settings = get_settings()
     client = AceStepClient(settings)
     ace = await client.health()
+    configured = read_acestep_env(settings)
+
+    models_payload: dict[str, Any] | None = None
+    models_error: str | None = None
+    if ace.get("ok"):
+        try:
+            models_payload = await client.list_models()
+        except Exception as exc:  # noqa: BLE001
+            models_error = str(exc)
+
+    ace_data = ace.get("data") if isinstance(ace.get("data"), dict) else {}
+    default_from_api = None
+    available: list[str] = []
+    if isinstance(models_payload, dict):
+        default_from_api = models_payload.get("default_model")
+        for item in models_payload.get("models") or []:
+            if isinstance(item, dict) and item.get("name"):
+                available.append(str(item["name"]))
+            elif item:
+                available.append(str(item))
+
+    configured_dit = configured.get("ACESTEP_CONFIG_PATH") or "acestep-v15-turbo"
+    configured_lm = configured.get("ACESTEP_LM_MODEL_PATH") or "acestep-5Hz-lm-0.6B"
+    init_llm = _truthy(configured.get("ACESTEP_INIT_LLM"))
+
+    loaded_dit = ace_data.get("loaded_model") or default_from_api or None
+    loaded_lm = ace_data.get("loaded_lm_model") or None
+    models_initialized = bool(ace_data.get("models_initialized"))
+    llm_initialized = bool(ace_data.get("llm_initialized"))
+
+    # Prefer a real name over null/empty for UI labels
+    default_model = default_from_api or configured_dit
+    loaded_label = loaded_dit if loaded_dit else ("not loaded yet (lazy)" if ace.get("ok") else "engine offline")
+
     return {
         "ok": True,
         "ace": ace,
         "library_count": len(Library(settings).list(1000)),
         "acestep_api_url": settings.acestep_api_url,
+        "models": {
+            "configured_dit": configured_dit,
+            "configured_lm": configured_lm,
+            "init_llm": init_llm,
+            "default_model": default_model,
+            "available": available,
+            "loaded_dit": loaded_dit,
+            "loaded_lm": loaded_lm,
+            "loaded_label": loaded_label,
+            "models_initialized": models_initialized,
+            "llm_initialized": llm_initialized,
+            "models_error": models_error,
+            "raw": models_payload,
+        },
     }
 
 

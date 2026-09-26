@@ -177,25 +177,34 @@ async def _format_lyrics(prompt: str, lyrics: str, duration: float, language: st
 
 
 async def _health_markdown() -> str:
+    from ace_studio.config import read_acestep_env
+
     client = AceStepClient()
     settings = get_settings()
+    configured = read_acestep_env(settings)
+    configured_dit = configured.get("ACESTEP_CONFIG_PATH") or "acestep-v15-turbo"
     health = await client.health()
     if not health.get("ok"):
         return (
             f"### Engine status\n"
             f"**Down** — cannot reach `{settings.acestep_api_url}`\n\n"
             f"`{health.get('error')}`\n\n"
+            f"Configured DiT: `{configured_dit}`\n\n"
             f"Start ACE-Step with `scripts/start.ps1` or "
             f"`uv run acestep-api` inside `{settings.acestep_path}`."
         )
-    models_note = ""
+    ace_data = health.get("data") if isinstance(health.get("data"), dict) else {}
+    loaded = ace_data.get("loaded_model") or "not loaded yet (lazy)"
+    models_note = f"\n- Configured DiT: `{configured_dit}`\n- Loaded DiT: `{loaded}`"
     try:
         models = await client.list_models()
-        default = models.get("default_model")
+        default = models.get("default_model") or configured_dit
         names = [m.get("name") if isinstance(m, dict) else str(m) for m in models.get("models", [])]
-        models_note = f"\n- Default model: `{default}`\n- Loaded: {', '.join(f'`{n}`' for n in names) or '—'}"
+        names = [n for n in names if n]
+        models_note += f"\n- API default: `{default}`"
+        models_note += f"\n- Available: {', '.join(f'`{n}`' for n in names) or 'none listed until init'}"
     except Exception:  # noqa: BLE001
-        models_note = "\n- Models: (could not list)"
+        models_note += "\n- Models list: (could not query `/v1/models`)"
     return f"### Engine status\n**OK** — `{settings.acestep_api_url}`{models_note}"
 
 
