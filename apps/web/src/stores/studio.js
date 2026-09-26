@@ -95,7 +95,16 @@ export const useStudioStore = defineStore('studio', {
         // Poll until done
         const started = Date.now()
         while (Date.now() - started < 600000) {
-          const job = await api.job(taskId)
+          let job
+          try {
+            job = await api.job(taskId)
+          } catch (err) {
+            await this.refreshHealth()
+            throw new Error(
+              err.message ||
+                'Lost connection to ACE-Step while generating. The engine may have crashed loading the model (common on 16GB RAM laptops).',
+            )
+          }
           if (job.status === 1) {
             this.jobStatus = 'Done'
             this.lastResult = job
@@ -103,6 +112,7 @@ export const useStudioStore = defineStore('studio', {
             return job
           }
           if (job.status === 2) {
+            await this.refreshHealth()
             throw new Error(job.error || 'Generation failed')
           }
           this.jobStatus = `Generating… (${job.stage || 'running'})`

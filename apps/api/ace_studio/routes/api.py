@@ -7,6 +7,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -14,6 +15,13 @@ from pydantic import BaseModel
 from ace_studio.ace_client import AceStepClient, AceStepError, build_create_fields
 from ace_studio.config import get_settings, read_acestep_env
 from ace_studio.library import Library
+
+ENGINE_DOWN_MSG = (
+    "ACE-Step engine stopped or became unreachable while handling the job. "
+    "On this laptop that usually means Windows ran out of virtual memory while "
+    "loading model weights (pagefile / ~15GB RAM). Restart the engine with "
+    "`uv run acestep-api` in ACE-Step-1.5, or run generation on a PC with 32GB+ RAM."
+)
 
 router = APIRouter(prefix="/api")
 
@@ -212,6 +220,8 @@ async def create_song(
         )
     except AceStepError as exc:
         raise HTTPException(502, str(exc)) from exc
+    except (httpx.HTTPError, OSError) as exc:
+        raise HTTPException(502, f"{ENGINE_DOWN_MSG} ({exc})") from exc
 
     task_id = submitted.get("task_id")
     if not task_id:
@@ -236,6 +246,14 @@ async def get_job(task_id: str) -> dict[str, Any]:
         items = await client.query_result([task_id])
     except AceStepError as exc:
         raise HTTPException(502, str(exc)) from exc
+    except (httpx.HTTPError, OSError) as exc:
+        # Prefer a structured failure the UI can show, not an unhandled 500
+        return {
+            "task_id": task_id,
+            "status": 2,
+            "stage": "failed",
+            "error": f"{ENGINE_DOWN_MSG} ({exc})",
+        }
 
     if not items:
         return {"task_id": task_id, "status": 0, "stage": "unknown"}
@@ -250,6 +268,8 @@ async def get_job(task_id: str) -> dict[str, Any]:
             error = parsed.get("error")
             if results and isinstance(results[0], dict):
                 error = results[0].get("error") or error
+            if not error:
+                error = "Generation failed inside ACE-Step (see engine logs)."
         return {"task_id": task_id, "status": status, "stage": stage, "error": error}
 
     # Success: download + library insert if not already present

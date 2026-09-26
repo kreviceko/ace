@@ -5,7 +5,10 @@ async function request(path, options = {}) {
   const contentType = res.headers.get('content-type') || ''
   const body = contentType.includes('application/json') ? await res.json() : await res.text()
   if (!res.ok) {
-    const message = typeof body === 'object' ? body.detail || body.error || JSON.stringify(body) : body
+    let message = typeof body === 'string' ? body : body?.error || body?.detail || JSON.stringify(body)
+    if (Array.isArray(message)) {
+      message = message.map((m) => m.msg || JSON.stringify(m)).join('; ')
+    }
     throw new Error(message || `HTTP ${res.status}`)
   }
   return body
