@@ -264,7 +264,11 @@ Local Create UI for **ACE-Step 1.5** — AceMusic-style **Simple / Custom / Remi
                         tag_dd.change(_insert_tag, inputs=[lyrics, tag_dd], outputs=[lyrics])
                         with gr.Row():
                             instrumental = gr.Checkbox(label="Instrumental", value=False)
-                            thinking = gr.Checkbox(label="Thinking (LM planner)", value=True)
+                            thinking = gr.Checkbox(
+                                label="Thinking (LM planner)",
+                                value=False,
+                                info="Needs ACESTEP_INIT_LLM=true and free system RAM for the 5Hz LM",
+                            )
                             use_format = gr.Checkbox(label="Format with LM", value=False)
                         negative_styles = gr.Textbox(label="Negative styles", placeholder="Negative Styles")
 

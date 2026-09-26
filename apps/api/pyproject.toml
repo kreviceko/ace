@@ -9,11 +9,13 @@ dependencies = [
   "httpx>=0.28.0",
   "python-multipart>=0.0.18",
   "python-dotenv>=1.0.0",
-  "gradio>=5.0.0",
   "pydantic>=2.0.0",
   "pydantic-settings>=2.0.0",
   "aiofiles>=24.0.0",
 ]
+
+[project.optional-dependencies]
+gradio = ["gradio>=5.0.0"]
 
 [project.scripts]
 ace-studio = "ace_studio.app:main"

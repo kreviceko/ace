@@ -56,6 +56,15 @@ try {
     Pop-Location
 }
 
+$WebDir = Join-Path $RepoRoot "apps\web"
+Write-Host "==> Installing Quasar UI deps"
+Push-Location $WebDir
+try {
+    npm install
+} finally {
+    Pop-Location
+}
+
 $EnvFile = Join-Path $RepoRoot ".env"
 if (-not (Test-Path $EnvFile)) {
     Copy-Item (Join-Path $RepoRoot ".env.example") $EnvFile

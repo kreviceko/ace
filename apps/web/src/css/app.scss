@@ -1,0 +1,59 @@
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+  background: #070a12;
+}
+
+body {
+  font-family: Inter, Roboto, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.ace-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+.ace-panel-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 600;
+}
+
+.ace-mode-tab {
+  border-radius: 999px !important;
+  padding: 0.35rem 0.9rem !important;
+}
+
+.lyrics-editor textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+  line-height: 1.55 !important;
+}
+
+.library-item:hover {
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.engine-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.engine-dot.ok {
+  background: #34d399;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.7);
+}
+
+.engine-dot.down {
+  background: #f87171;
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.7);
+}

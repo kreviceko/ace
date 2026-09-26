@@ -55,7 +55,21 @@ if (-not $healthy) {
     Write-Host "ACE-Step API is healthy." -ForegroundColor Green
 }
 
-Write-Host "==> Starting ACE Studio UI on :8787" -ForegroundColor Cyan
+$WebDir = Join-Path $RepoRoot "apps\web"
+$WebDist = Join-Path $WebDir "dist"
+if (-not (Test-Path $WebDist)) {
+    Write-Host "==> Building Quasar UI (first time)" -ForegroundColor Cyan
+    Push-Location $WebDir
+    try {
+        npm install
+        npm run build
+    } finally {
+        Pop-Location
+    }
+}
+
+Write-Host "==> Starting ACE Studio API+UI on :8787" -ForegroundColor Cyan
+Write-Host "Dev UI alternative: cd apps\web; npm run dev  (http://127.0.0.1:9000)"
 Push-Location $ApiDir
 try {
     uv run ace-studio

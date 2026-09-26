@@ -1,6 +1,6 @@
 # ACE Studio
 
-Local music studio UI for **[ACE-Step 1.5](https://github.com/ACE-Step/ACE-Step-1.5)**, with Create modes aligned to [AceMusic Create](https://acemusic.ai/playground/create):
+Local music studio for **[ACE-Step 1.5](https://github.com/ACE-Step/ACE-Step-1.5)** — dark **Quasar / Vue 3** UI + FastAPI, with Create modes aligned to [AceMusic Create](https://acemusic.ai/playground/create):
 
 | Mode | What it does |
 |------|----------------|
@@ -9,13 +9,14 @@ Local music studio UI for **[ACE-Step 1.5](https://github.com/ACE-Step/ACE-Step-
 | **Remix** | Upload MP3 → cover (`task_type=cover`) |
 | **Edit** | Repaint a time range (`task_type=repaint`) |
 
-Also includes lyric formatting via ACE `/format_input`, a local SQLite library, and downloadable results.
+Also includes a Lyrics workspace, ACE `/format_input`, local SQLite library, and downloadable results.
 
 ## Requirements
 
 - Windows / macOS / Linux
 - Git, [uv](https://docs.astral.sh/uv/), Python 3.11–3.12 (uv installs 3.12 for ACE-Step)
-- NVIDIA GPU recommended (this project defaults to **turbo + 0.6B LM** for ~8GB VRAM)
+- NVIDIA GPU recommended (this project defaults to **turbo** for ~8GB VRAM)
+- **System RAM: 32GB recommended.** 16GB can work with DiT-only (`ACESTEP_INIT_LLM=false`) if the Windows pagefile is large enough (32GB+). Loading ACE-Step weights needs a large virtual-memory commit; error `os error 1455` / “paging file is too small” means grow the pagefile or free RAM.
 - ffmpeg on PATH (optional but useful)
 
 ## Quick start (Windows)
@@ -47,10 +48,23 @@ uv run ace-studio
 
 ```
 ace/                      # this repo
-  apps/api/               # Gradio UI + ACE client + library
+  apps/web/               # Quasar + Vue 3 SPA (Create / Library / Lyrics / Settings)
+  apps/api/               # FastAPI BFF + ACE client + library
   scripts/                # install.ps1 / start.ps1
   data/                   # uploads, library audio, exports
 ../ACE-Step-1.5/          # official engine (sibling clone)
+```
+
+### Frontend dev
+
+```powershell
+cd apps\web
+npm install
+npm run dev          # http://127.0.0.1:9000  (proxies /api → :8787)
+
+# separate terminal
+cd apps\api
+uv run ace-studio    # http://127.0.0.1:8787
 ```
 
 ## Config
@@ -81,13 +95,14 @@ For native stem extract / lego / complete you need a **base** DiT (`acestep-v15-
 
 ## Roadmap
 
-- [x] Phase 0 — install ACE-Step + Create MVP UI
-- [x] Simple / Custom / Remix / Edit
+- [x] Phase 0 — install ACE-Step beside the app
+- [x] Quasar dark studio (Create / Library / Lyrics / Settings)
+- [x] Simple / Custom / Remix / Edit API + UI
 - [x] Format lyrics + library save/download
 - [ ] ZIP export packs + LRC
 - [ ] Interactive lyric assist (SpaceXAI)
 - [ ] Stem export (Demucs + ACE extract)
-- [ ] Quasar SPA frontend (optional upgrade from Gradio)
+- [ ] Waveform Edit mask UI
 
 ## License
 
