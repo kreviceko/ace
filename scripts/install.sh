@@ -46,6 +46,13 @@ echo "==> Syncing ACE Studio API"
   uv sync
 )
 
+WEB_DIR="$REPO_ROOT/apps/web"
+echo "==> Installing Quasar UI deps"
+(
+  cd "$WEB_DIR"
+  npm install
+)
+
 if [[ ! -f "$REPO_ROOT/.env" ]]; then
   cp "$REPO_ROOT/.env.example" "$REPO_ROOT/.env"
   echo "Created $REPO_ROOT/.env"
