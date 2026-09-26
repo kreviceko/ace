@@ -132,7 +132,7 @@ select {
   transform: translateY(-1px);
 }
 
-.studio-nav a.router-link-active {
+.studio-nav a.router-link-exact-active {
   color: #0a0618;
   background: linear-gradient(160deg, #9b8cff, #7c6cf0);
   box-shadow: 0 10px 28px var(--glow-v);
