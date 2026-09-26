@@ -9,7 +9,16 @@ Local music studio for **[ACE-Step 1.5](https://github.com/ACE-Step/ACE-Step-1.5
 | **Remix** | Upload MP3 → cover (`task_type=cover`) |
 | **Edit** | Repaint a time range (`task_type=repaint`) |
 
-Also includes a Lyrics workspace, ACE `/format_input`, local SQLite library, and downloadable results.
+Also includes a Lyrics lab, ACE `/format_input`, local SQLite library, and downloadable results.
+
+### Typical workflow (this project)
+
+1. **Remix MP3** — upload a demo/melody sketch  
+2. Add a **lyric concept** and/or **placeholder lyrics** for timing  
+3. **Draft lyrics** (needs LM) or keep placeholders  
+4. Generate the cover/remix  
+5. Use **Simple** for album-style experiments from a description  
+
 
 ## Requirements
 

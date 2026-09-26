@@ -133,6 +133,21 @@ class Library:
             row = conn.execute("SELECT * FROM songs WHERE id = ?", (item_id,)).fetchone()
         return self._row_to_item(row) if row else None
 
+    def delete(self, item_id: str) -> bool:
+        item = self.get(item_id)
+        if not item:
+            return False
+        with self._connect() as conn:
+            conn.execute("DELETE FROM songs WHERE id = ?", (item_id,))
+            conn.commit()
+        path = Path(item.audio_path)
+        if path.exists():
+            try:
+                path.unlink()
+            except OSError:
+                pass
+        return True
+
     def _row_to_item(self, row: sqlite3.Row) -> LibraryItem:
         return LibraryItem(
             id=row["id"],

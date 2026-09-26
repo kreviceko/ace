@@ -18,6 +18,7 @@ export const api = {
   health: () => request('/api/health'),
   library: () => request('/api/library'),
   getSong: (id) => request(`/api/library/${id}`),
+  deleteSong: (id) => request(`/api/library/${id}`, { method: 'DELETE' }),
   formatLyrics: (payload) =>
     request('/api/lyrics/format', {
       method: 'POST',

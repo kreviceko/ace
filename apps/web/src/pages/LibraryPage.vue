@@ -23,6 +23,7 @@
             <q-btn flat dense round icon="play_arrow" @click="play(props.row)" />
             <q-btn flat dense round icon="download" :href="api.audioUrl(props.row.id)" target="_blank" />
             <q-btn flat dense round icon="edit" @click="reuse(props.row)" />
+            <q-btn flat dense round icon="delete" color="negative" @click="remove(props.row)" />
           </q-td>
         </template>
       </q-table>
@@ -33,11 +34,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { useStudioStore } from '@/stores/studio'
 import { api } from '@/api/client'
 
 const store = useStudioStore()
 const router = useRouter()
+const $q = useQuasar()
 const loading = ref(false)
 
 const columns = [
@@ -64,6 +67,24 @@ function play(row) {
 function reuse(row) {
   store.loadFromLibrary(row)
   router.push('/')
+}
+
+async function remove(row) {
+  $q.dialog({
+    title: 'Delete song?',
+    message: row.title,
+    cancel: true,
+    persistent: true,
+  }).onOk(async () => {
+    try {
+      await api.deleteSong(row.id)
+      if (store.lastResult?.id === row.id) store.lastResult = null
+      await reload()
+      $q.notify({ type: 'positive', message: 'Deleted' })
+    } catch (err) {
+      $q.notify({ type: 'negative', message: err.message })
+    }
+  })
 }
 
 onMounted(reload)

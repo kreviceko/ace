@@ -138,6 +138,13 @@ async def get_library_item(item_id: str) -> dict[str, Any]:
     }
 
 
+@router.delete("/library/{item_id}")
+async def delete_library_item(item_id: str) -> dict[str, Any]:
+    if not Library().delete(item_id):
+        raise HTTPException(404, "Song not found")
+    return {"ok": True, "id": item_id}
+
+
 @router.get("/library/{item_id}/audio")
 async def get_library_audio(item_id: str) -> FileResponse:
     item = Library().get(item_id)
@@ -190,6 +197,16 @@ async def create_song(
     if mode in {"remix", "edit"} and src_path is None:
         raise HTTPException(400, "Remix and Edit require src_audio")
 
+    configured = read_acestep_env(get_settings())
+    env_allows_lm = _truthy(configured.get("ACESTEP_INIT_LLM"))
+    allow_lm = bool(data.get("allow_lm", env_allows_lm)) and env_allows_lm
+
+    seed_val = data.get("seed")
+    try:
+        seed_int = int(seed_val) if seed_val is not None and str(seed_val) != "" else None
+    except (TypeError, ValueError):
+        seed_int = None
+
     fields = build_create_fields(
         mode,
         sample_query=data.get("sample_query") or "",
@@ -208,7 +225,9 @@ async def create_song(
         repainting_start=float(data.get("repainting_start") or 0.0),
         repainting_end=data.get("repainting_end"),
         lm_negative_prompt=data.get("negative_styles") or "",
-        batch_size=1,
+        batch_size=int(data.get("batch_size") or 1),
+        seed=seed_int if seed_int is not None and seed_int >= 0 else None,
+        allow_lm=allow_lm,
     )
 
     client = AceStepClient()

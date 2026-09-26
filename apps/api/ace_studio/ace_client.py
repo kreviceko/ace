@@ -232,6 +232,7 @@ def build_create_fields(
     lm_negative_prompt: str = "",
     batch_size: int = 1,
     seed: int | None = None,
+    allow_lm: bool = True,
 ) -> dict[str, Any]:
     """Map AceMusic Create modes onto ACE-Step release_task fields."""
     mode = (mode or "custom").lower()
@@ -258,18 +259,23 @@ def build_create_fields(
         fields["use_random_seed"] = True
 
     if instrumental:
-        # Empty lyrics + instrumental flag when supported; also clear lyrics.
-        fields["lyrics"] = ""
+        fields["lyrics"] = "[Instrumental]"
         fields["instrumental"] = True
-    else:
-        if lyrics:
-            fields["lyrics"] = lyrics
+    elif lyrics:
+        fields["lyrics"] = lyrics
 
     if mode == "simple":
-        fields["sample_mode"] = True
-        fields["sample_query"] = sample_query or prompt
-        fields["thinking"] = True
         fields["task_type"] = "text2music"
+        query = sample_query or prompt
+        if allow_lm:
+            fields["sample_mode"] = True
+            fields["sample_query"] = query
+            fields["thinking"] = True
+        else:
+            # DiT-only fallback: treat description as a plain caption
+            fields["prompt"] = query
+            fields["thinking"] = False
+            fields["use_format"] = False
     elif mode == "remix":
         fields["task_type"] = "cover"
         fields["prompt"] = prompt or sample_query
@@ -287,9 +293,10 @@ def build_create_fields(
     else:  # custom
         fields["task_type"] = "text2music"
         fields["prompt"] = prompt
-        fields["thinking"] = bool(thinking)
-        fields["use_format"] = bool(use_format)
-        if sample_query and not prompt:
+        can_think = bool(thinking) and allow_lm
+        fields["thinking"] = can_think
+        fields["use_format"] = bool(use_format) and allow_lm
+        if sample_query and not prompt and allow_lm:
             fields["sample_query"] = sample_query
             fields["sample_mode"] = True
 

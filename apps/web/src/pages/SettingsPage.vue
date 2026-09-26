@@ -79,9 +79,9 @@
       </q-list>
 
       <q-banner dense rounded class="bg-grey-10 text-grey-4 q-mb-md">
-        “None / —” usually means the engine is offline, or models are still in lazy-load mode
-        (<code>ACESTEP_NO_INIT=true</code>). Configured names come from
-        <code>ACE-Step-1.5/.env</code>; weights load on first successful Generate.
+        Configured names come from <code>ACE-Step-1.5/.env</code>. Weights load on first Generate when
+        <code>ACESTEP_NO_INIT=true</code>. For Draft lyrics / Simple / Format, set
+        <code>ACESTEP_INIT_LLM=true</code> (needs enough RAM). Remix with your own or placeholder lyrics works with LM off.
       </q-banner>
 
       <div class="ace-panel-title q-mb-sm">Raw health</div>
