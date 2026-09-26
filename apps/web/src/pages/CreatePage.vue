@@ -1,346 +1,263 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="row q-col-gutter-md">
-      <div class="col-12 col-lg-8">
-        <div class="ace-panel q-pa-md">
-          <div class="row items-start justify-between q-col-gutter-sm q-mb-md">
-            <div>
-              <div class="ace-page-title">Create</div>
-              <div class="ace-page-sub q-mt-xs">{{ modeHint }}</div>
-            </div>
-            <q-btn-toggle
-              v-model="store.mode"
-              toggle-color="primary"
-              unelevated
-              dense
-              no-caps
-              :options="modeOptions"
-              class="mode-toggle"
-            />
-          </div>
+  <div>
+    <header style="margin-bottom: 22px">
+      <div class="studio-kicker">Studio</div>
+      <h1 class="studio-title">Make the next track</h1>
+      <p class="studio-lead">
+        Upload a melody idea, shape the vibe, keep placeholder lyrics for timing — then generate.
+      </p>
+    </header>
 
-          <q-banner
-            v-if="capabilityBanner"
-            dense
-            rounded
-            class="bg-grey-10 text-grey-4 q-mb-md"
-          >
-            {{ capabilityBanner }}
-          </q-banner>
-
-          <!-- Remix / Edit: source audio first -->
-          <div v-if="store.needsSource" class="q-mb-md">
-            <q-banner
-              v-if="store.mode === 'edit' && store.editSourceUrl && !store.srcFile"
-              dense
-              rounded
-              class="bg-grey-10 text-grey-4 q-mb-sm"
-            >
-              Using library audio for Edit. Upload a different file to override.
-            </q-banner>
-            <q-file
-              v-model="store.srcFile"
-              outlined
-              dark
-              :label="store.mode === 'edit' && store.editSourceUrl ? 'Replace source audio (optional)' : 'Source MP3 / audio (required)'"
-              accept="audio/*,.mp3,.wav,.flac,.m4a"
-              clearable
-              max-files="1"
-              @update:model-value="onSrcFile"
-            >
-              <template #prepend><q-icon name="upload_file" /></template>
-              <template #hint>Your melody sketch or demo — structure is preserved in Remix</template>
-            </q-file>
-
-            <div v-if="store.mode === 'edit' && waveformUrl" class="q-mt-md">
-              <div class="text-caption text-grey-5 q-mb-xs">Waveform — drag the region to choose what to repaint</div>
-              <WaveformEditor
-                :url="waveformUrl"
-                v-model:start="store.form.repainting_start"
-                v-model:end="store.form.repainting_end"
-              />
-            </div>
-          </div>
-
-          <q-input
-            v-if="store.mode === 'simple'"
-            v-model="store.form.sample_query"
-            type="textarea"
-            autogrow
-            outlined
-            dark
-            label="Album / style experiment"
-            placeholder="late-night synthwave album opener, neon melancholy, driving bass"
-            class="q-mb-md"
-          />
-
-          <template v-if="store.mode !== 'simple'">
-            <q-input
-              v-model="store.form.prompt"
-              type="textarea"
-              autogrow
-              outlined
-              dark
-              label="Styles / caption"
-              placeholder="genre, mood, vocal character, production…"
-              class="q-mb-md"
-            />
-
-            <q-input
-              v-model="store.form.lyric_concept"
-              type="textarea"
-              autogrow
-              outlined
-              dark
-              label="Lyric concept (optional)"
-              placeholder="Theme or story beats — use Draft lyrics to expand into structured lines"
-              class="q-mb-md"
-            />
-          </template>
-
-          <div class="row items-center justify-between q-mb-xs">
-            <div class="text-subtitle2">
-              Lyrics
-              <span class="text-caption text-grey-5 q-ml-sm">
-                placeholders OK for melody timing
-              </span>
-            </div>
-          </div>
-          <StructureTags :tags="store.sectionTags" class="q-mb-sm" @insert="store.insertTag" />
-
-          <q-input
-            v-model="store.form.lyrics"
-            type="textarea"
-            outlined
-            dark
-            :disable="store.form.instrumental"
-            placeholder="[Verse]&#10;da da melody placeholder&#10;&#10;[Chorus]&#10;hook goes here…"
-            input-style="min-height: 200px"
-            class="lyrics-editor q-mb-sm"
-          />
-
-          <div class="row q-gutter-sm q-mb-md">
-            <q-btn
-              outline
-              color="secondary"
-              icon="auto_awesome"
-              label="Draft lyrics from concept"
-              :disable="store.generating || !store.lmAvailable"
-              @click="onDraftLyrics"
-            />
-            <q-btn
-              outline
-              color="grey-5"
-              icon="auto_fix"
-              label="Format lyrics"
-              :disable="store.generating || !store.lmAvailable"
-              @click="onFormat"
-            />
-            <q-btn flat dense color="grey-5" label="Open Lyrics lab" to="/lyrics" />
-          </div>
-
-          <div class="row q-col-gutter-md q-mb-md">
-            <div class="col-12 col-sm-4">
-              <q-checkbox v-model="store.form.instrumental" dark label="Instrumental" />
-            </div>
-            <div class="col-12 col-sm-4">
-              <q-checkbox
-                v-model="store.form.thinking"
-                dark
-                label="Thinking (LM)"
-                :disable="!store.lmAvailable || store.mode === 'remix' || store.mode === 'edit'"
-              />
-            </div>
-            <div class="col-12 col-sm-4">
-              <q-checkbox
-                v-model="store.form.use_format"
-                dark
-                label="Format on generate"
-                :disable="!store.lmAvailable"
-              />
-            </div>
-          </div>
-
-          <q-expansion-item dense dark label="Advanced" header-class="text-grey-4" class="q-mb-md">
-            <div class="row q-col-gutter-md q-pt-sm">
-              <div class="col-12 col-sm-6 col-md-3">
-                <q-slider v-model="store.form.duration" :min="0" :max="600" :step="5" label dark color="primary" />
-                <div class="text-caption text-grey-5">Duration: {{ store.form.duration || 'auto' }}s</div>
-              </div>
-              <div class="col-6 col-md-3">
-                <q-input v-model.number="store.form.bpm" type="number" outlined dark dense label="BPM (0=auto)" />
-              </div>
-              <div class="col-6 col-md-3">
-                <q-input v-model="store.form.key" outlined dark dense label="Key" placeholder="C Major" />
-              </div>
-              <div class="col-6 col-md-3">
-                <q-select
-                  v-model="store.form.time_signature"
-                  :options="timeOptions"
-                  outlined
-                  dark
-                  dense
-                  label="Time signature"
-                  emit-value
-                  map-options
-                  clearable
-                />
-              </div>
-              <div class="col-6 col-md-3">
-                <q-input v-model="store.form.vocal_language" outlined dark dense label="Language" />
-              </div>
-              <div class="col-6 col-md-3">
-                <q-input
-                  v-model.number="store.form.seed"
-                  type="number"
-                  outlined
-                  dark
-                  dense
-                  label="Seed (−1 = random)"
-                />
-              </div>
-              <div class="col-6 col-md-3">
-                <q-input
-                  v-model.number="store.form.batch_size"
-                  type="number"
-                  outlined
-                  dark
-                  dense
-                  label="Batch (1–4)"
-                  :min="1"
-                  :max="4"
-                />
-              </div>
-              <div class="col-12 col-md-6">
-                <q-input v-model="store.form.negative_styles" outlined dark dense label="Negative styles" />
-              </div>
-
-              <div v-if="store.mode === 'remix'" class="col-12 col-md-6">
-                <div class="text-caption text-grey-5">Cover strength (keep structure)</div>
-                <q-slider v-model="store.form.audio_cover_strength" :min="0" :max="1" :step="0.05" label dark color="secondary" />
-              </div>
-              <div v-if="store.mode === 'remix'" class="col-12 col-md-6">
-                <div class="text-caption text-grey-5">Remix strength (more change)</div>
-                <q-slider v-model="store.form.cover_noise_strength" :min="0" :max="1" :step="0.05" label dark color="accent" />
-              </div>
-              <div v-if="store.mode === 'edit'" class="col-6">
-                <q-input v-model.number="store.form.repainting_start" type="number" outlined dark dense label="Edit start (sec)" />
-              </div>
-              <div v-if="store.mode === 'edit'" class="col-6">
-                <q-input v-model.number="store.form.repainting_end" type="number" outlined dark dense label="Edit end (0=end)" />
-              </div>
-              <div v-if="store.mode === 'edit'" class="col-12 text-caption text-grey-5">
-                Prefer the waveform region above; these numbers stay in sync.
-              </div>
-
-              <div v-if="store.mode === 'custom'" class="col-12">
-                <q-file
-                  v-model="store.refFile"
-                  outlined
-                  dark
-                  dense
-                  label="Reference audio (optional style guide)"
-                  accept="audio/*,.mp3,.wav,.flac,.m4a"
-                  clearable
-                  max-files="1"
-                />
-              </div>
-            </div>
-          </q-expansion-item>
-
-          <div class="row q-gutter-sm items-center">
-            <q-btn
-              unelevated
-              color="primary"
-              icon="play_arrow"
-              label="Generate"
-              class="ace-btn-primary q-px-lg"
-              :loading="store.generating"
-              :disable="!store.engineOnline"
-              @click="onGenerate"
-            />
-            <q-btn
-              v-if="store.generating"
-              outline
-              color="negative"
-              icon="stop"
-              label="Cancel wait"
-              class="ace-btn-ghost"
-              @click="store.cancelGenerate()"
-            />
-            <div v-if="store.jobStatus" class="text-caption" style="color: var(--ace-muted)">{{ store.jobStatus }}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-lg-4">
-        <div class="ace-panel q-pa-md q-mb-md">
-          <div class="ace-panel-title q-mb-sm">Now playing</div>
-          <div v-if="currentAudioUrl" class="q-mb-sm">
-            <div class="text-subtitle1 text-weight-bold q-mb-xs">{{ currentTitle }}</div>
-            <div v-if="metaLine" class="text-caption q-mb-sm" style="color: var(--ace-teal)">{{ metaLine }}</div>
-            <audio :src="currentAudioUrl" controls style="width: 100%; border-radius: 12px" />
-            <div class="row q-gutter-sm q-mt-sm">
-              <q-btn
-                dense
-                outline
-                icon="download"
-                label="Download"
-                class="ace-btn-ghost"
-                :href="currentAudioUrl"
-                target="_blank"
-              />
-            </div>
-          </div>
-          <div v-else class="text-body2" style="color: var(--ace-muted)">
-            {{ emptyPlayerHint }}
-          </div>
-        </div>
-
-        <div class="ace-panel q-pa-md">
-          <div class="row items-center justify-between q-mb-sm">
-            <div class="ace-panel-title">Recent</div>
-            <q-btn flat dense size="sm" icon="refresh" @click="store.refreshLibrary()" />
-          </div>
-          <q-list dark separator>
-            <q-item
-              v-for="item in store.library.slice(0, 8)"
-              :key="item.id"
-              clickable
-              class="library-item rounded-borders"
-              @click="playItem(item)"
-            >
-              <q-item-section>
-                <q-item-label>{{ item.title }}</q-item-label>
-                <q-item-label caption class="text-grey-5">{{ item.mode }} · {{ item.created_at?.slice(0, 19) }}</q-item-label>
-              </q-item-section>
-              <q-item-section side>
-                <q-btn flat dense round icon="edit" @click.stop="reuseItem(item)" />
-              </q-item-section>
-            </q-item>
-            <q-item v-if="!store.library.length">
-              <q-item-section class="text-grey-6">No songs yet</q-item-section>
-            </q-item>
-          </q-list>
-        </div>
-      </div>
+    <div class="mode-grid">
+      <button
+        v-for="m in modes"
+        :key="m.value"
+        type="button"
+        class="mode-card"
+        :class="{ active: store.mode === m.value }"
+        @click="store.mode = m.value"
+      >
+        <strong>{{ m.label }}</strong>
+        <span>{{ m.blurb }}</span>
+      </button>
     </div>
-  </q-page>
+
+    <div v-if="capabilityBanner" class="notice" :class="{ warn: !store.engineOnline }">
+      {{ capabilityBanner }}
+    </div>
+
+    <div class="create-grid">
+      <section class="glass glass-pad">
+        <div v-if="store.needsSource">
+          <div class="section-label">Source</div>
+          <div
+            class="dropzone"
+            :class="{ drag: dragging }"
+            @click="fileInput?.click()"
+            @dragover.prevent="dragging = true"
+            @dragleave.prevent="dragging = false"
+            @drop.prevent="onDrop"
+          >
+            <div class="dz-icon"><i class="material-icons">upload_file</i></div>
+            <strong>{{ store.mode === 'remix' ? 'Drop your MP3 idea' : 'Drop audio to edit' }}</strong>
+            <p>or click to browse · mp3, wav, flac, m4a</p>
+            <div v-if="sourceLabel" class="file-name">{{ sourceLabel }}</div>
+          </div>
+          <input
+            ref="fileInput"
+            type="file"
+            accept="audio/*,.mp3,.wav,.flac,.m4a"
+            hidden
+            @change="onFilePick"
+          />
+
+          <div v-if="store.mode === 'edit' && waveformUrl" style="margin-bottom: 18px">
+            <div class="section-label">Edit region</div>
+            <WaveformEditor
+              :url="waveformUrl"
+              v-model:start="store.form.repainting_start"
+              v-model:end="store.form.repainting_end"
+            />
+          </div>
+        </div>
+
+        <div v-if="store.mode === 'simple'" class="field">
+          <label>Album / style experiment</label>
+          <textarea
+            v-model="store.form.sample_query"
+            placeholder="late-night synthwave opener, neon melancholy, driving bass"
+          />
+        </div>
+
+        <template v-else>
+          <div class="field">
+            <label>Styles / caption</label>
+            <textarea
+              v-model="store.form.prompt"
+              placeholder="genre, mood, vocal character, production…"
+            />
+          </div>
+          <div class="field">
+            <label>Lyric concept <span class="hint">optional</span></label>
+            <textarea
+              v-model="store.form.lyric_concept"
+              placeholder="Theme or story beats — draft into structured lyrics when ready"
+            />
+          </div>
+        </template>
+
+        <div class="section-label">Lyrics</div>
+        <div class="chip-row">
+          <button
+            v-for="tag in store.sectionTags"
+            :key="tag"
+            type="button"
+            class="chip"
+            @click="store.insertTag(tag)"
+          >
+            {{ tag }}
+          </button>
+        </div>
+        <div class="field lyrics">
+          <label>Lines & placeholders <span class="hint">great for matching melody timing</span></label>
+          <textarea
+            v-model="store.form.lyrics"
+            :disabled="store.form.instrumental"
+            placeholder="[Verse]&#10;da da melody placeholder&#10;&#10;[Chorus]&#10;hook goes here…"
+          />
+        </div>
+
+        <div class="btn-row" style="margin-bottom: 14px">
+          <button class="btn btn-soft" type="button" :disabled="!store.lmAvailable || store.generating" @click="onDraft">
+            Draft lyrics
+          </button>
+          <button class="btn btn-ghost" type="button" :disabled="!store.lmAvailable || store.generating" @click="onFormat">
+            Format
+          </button>
+          <RouterLink class="btn btn-ghost" to="/lyrics">Open Lyrics lab</RouterLink>
+        </div>
+
+        <div class="toggle-row">
+          <label class="toggle" :class="{ on: store.form.instrumental }">
+            <input v-model="store.form.instrumental" type="checkbox" /> Instrumental
+          </label>
+          <label
+            class="toggle"
+            :class="{ on: store.form.thinking }"
+            :style="{ opacity: !store.lmAvailable || store.mode === 'remix' || store.mode === 'edit' ? 0.45 : 1 }"
+          >
+            <input
+              v-model="store.form.thinking"
+              type="checkbox"
+              :disabled="!store.lmAvailable || store.mode === 'remix' || store.mode === 'edit'"
+            />
+            Thinking
+          </label>
+          <label class="toggle" :class="{ on: store.form.use_format }" :style="{ opacity: !store.lmAvailable ? 0.45 : 1 }">
+            <input v-model="store.form.use_format" type="checkbox" :disabled="!store.lmAvailable" />
+            Format on generate
+          </label>
+        </div>
+
+        <details class="glass" style="border-radius: 18px; margin-bottom: 18px">
+          <summary class="section-label" style="cursor: pointer; padding: 14px 16px; margin: 0">Advanced</summary>
+          <div style="padding: 0 16px 16px">
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+              <div class="field">
+                <label>Duration (sec, 0=auto)</label>
+                <input v-model.number="store.form.duration" type="number" min="0" max="600" step="5" />
+              </div>
+              <div class="field">
+                <label>BPM (0=auto)</label>
+                <input v-model.number="store.form.bpm" type="number" min="0" />
+              </div>
+              <div class="field">
+                <label>Key</label>
+                <input v-model="store.form.key" type="text" placeholder="C Major" />
+              </div>
+              <div class="field">
+                <label>Language</label>
+                <input v-model="store.form.vocal_language" type="text" />
+              </div>
+              <div class="field">
+                <label>Seed (−1 random)</label>
+                <input v-model.number="store.form.seed" type="number" />
+              </div>
+              <div class="field">
+                <label>Batch 1–4</label>
+                <input v-model.number="store.form.batch_size" type="number" min="1" max="4" />
+              </div>
+            </div>
+            <div v-if="store.mode === 'remix'" class="field">
+              <label>Cover strength {{ store.form.audio_cover_strength }}</label>
+              <input v-model.number="store.form.audio_cover_strength" type="range" min="0" max="1" step="0.05" />
+            </div>
+            <div v-if="store.mode === 'remix'" class="field">
+              <label>Remix strength {{ store.form.cover_noise_strength }}</label>
+              <input v-model.number="store.form.cover_noise_strength" type="range" min="0" max="1" step="0.05" />
+            </div>
+            <div v-if="store.mode === 'custom'" class="field">
+              <label>Reference audio (optional)</label>
+              <input type="file" accept="audio/*" @change="onRefPick" />
+            </div>
+          </div>
+        </details>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" type="button" :disabled="!store.engineOnline || store.generating" @click="onGenerate">
+            <i class="material-icons" style="font-size: 18px">play_arrow</i>
+            {{ store.generating ? 'Generating…' : 'Generate' }}
+          </button>
+          <button v-if="store.generating" class="btn btn-danger" type="button" @click="store.cancelGenerate()">
+            Cancel wait
+          </button>
+          <span v-if="store.jobStatus" style="color: var(--muted); font-size: 0.85rem">{{ store.jobStatus }}</span>
+        </div>
+      </section>
+
+      <aside class="stage-card glass glass-pad">
+        <div class="stage-art"><span>Stage</span></div>
+        <div class="section-label">Session</div>
+        <h2 class="stage-title">{{ store.lastResult?.title || 'Nothing playing yet' }}</h2>
+        <p style="color: var(--muted); font-size: 0.9rem; margin: 0 0 16px">
+          {{ emptyHint }}
+        </p>
+
+        <div class="section-label">Recent</div>
+        <ul class="recent-list">
+          <li v-for="item in store.library.slice(0, 6)" :key="item.id">
+            <button type="button" @click="playItem(item)">
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.mode }} · {{ item.created_at?.slice(0, 19) }}</small>
+            </button>
+          </li>
+          <li v-if="!store.library.length" style="color: var(--faint); padding: 8px">No songs yet</li>
+        </ul>
+      </aside>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useStudioStore } from '@/stores/studio'
-import { api } from '@/api/client'
-import StructureTags from '@/components/StructureTags.vue'
 import WaveformEditor from '@/components/WaveformEditor.vue'
 
 const $q = useQuasar()
 const store = useStudioStore()
+const fileInput = ref(null)
+const dragging = ref(false)
 const localObjectUrl = ref('')
 
+const modes = [
+  { value: 'remix', label: 'Remix MP3', blurb: 'Upload a demo and restyle it' },
+  { value: 'custom', label: 'Custom', blurb: 'Styles + lyrics from scratch' },
+  { value: 'simple', label: 'Simple', blurb: 'Album experiments from a vibe' },
+  { value: 'edit', label: 'Edit', blurb: 'Repaint a slice of a track' },
+]
+
 const waveformUrl = computed(() => localObjectUrl.value || store.editSourceUrl || '')
+const sourceLabel = computed(() => {
+  const f = store.srcFile
+  if (f instanceof File) return f.name
+  if (store.editSourceUrl) return 'Library audio loaded'
+  return ''
+})
+
+const capabilityBanner = computed(() => {
+  if (!store.engineOnline) return 'Engine offline — start ACE-Step before generating.'
+  if (!store.lmAvailable && (store.mode === 'simple' || store.form.use_format)) {
+    return 'Language model is off. Simple / Draft / Format need ACESTEP_INIT_LLM=true. Remix with your lyrics still works.'
+  }
+  return ''
+})
+
+const emptyHint = computed(() =>
+  store.engineOnline
+    ? 'Finished takes appear in the dock below and in Library.'
+    : 'Bring the engine online to generate.',
+)
 
 function revokeLocalUrl() {
   if (localObjectUrl.value) {
@@ -349,97 +266,39 @@ function revokeLocalUrl() {
   }
 }
 
-function onSrcFile(val) {
+function setSourceFile(file) {
+  if (!(file instanceof File)) return
   revokeLocalUrl()
+  store.srcFile = file
   store.editSourceUrl = ''
-  const file = Array.isArray(val) ? val[0] : val
-  if (file instanceof File) {
-    localObjectUrl.value = URL.createObjectURL(file)
-  }
+  localObjectUrl.value = URL.createObjectURL(file)
 }
 
-watch(
-  () => store.mode,
-  (mode) => {
-    if (mode !== 'edit') return
-  },
-)
+function onFilePick(e) {
+  const file = e.target.files?.[0]
+  if (file) setSourceFile(file)
+}
 
-onBeforeUnmount(revokeLocalUrl)
+function onDrop(e) {
+  dragging.value = false
+  const file = e.dataTransfer?.files?.[0]
+  if (file) setSourceFile(file)
+}
 
-const modeOptions = [
-  { label: 'Remix MP3', value: 'remix' },
-  { label: 'Custom', value: 'custom' },
-  { label: 'Simple', value: 'simple' },
-  { label: 'Edit', value: 'edit' },
-]
-
-const timeOptions = [
-  { label: 'Auto', value: '' },
-  { label: '2/4', value: '2' },
-  { label: '3/4', value: '3' },
-  { label: '4/4', value: '4' },
-  { label: '6/8', value: '6' },
-]
-
-const modeHint = computed(() => {
-  switch (store.mode) {
-    case 'remix':
-      return 'Upload a demo MP3 and restyle it. Keep placeholder lyrics if you care about phrasing/timing.'
-    case 'edit':
-      return 'Repaint a time range of an existing track (fix a section, swap lyrics).'
-    case 'simple':
-      return 'Album / style experiments from one description (needs ACE language model).'
-    default:
-      return 'Full control: styles + lyrics from scratch (or after drafting lyrics).'
-  }
-})
-
-const capabilityBanner = computed(() => {
-  if (!store.engineOnline) {
-    return 'Engine offline — start ACE-Step (`uv run acestep-api` or scripts/start.ps1) before generating.'
-  }
-  if (!store.lmAvailable && (store.mode === 'simple' || store.form.use_format)) {
-    return 'Language model is off (ACESTEP_INIT_LLM=false). Simple / Draft lyrics / Format need it. Remix with your own lyrics still works.'
-  }
-  return ''
-})
-
-const emptyPlayerHint = computed(() => {
-  if (!store.engineOnline) return 'Start the ACE-Step engine, then generate a song to hear it here.'
-  return 'Generate a remix or track to hear it here.'
-})
-
-const currentAudioUrl = computed(() => {
-  const id = store.lastResult?.id
-  return id ? api.audioUrl(id) : null
-})
-
-const currentTitle = computed(() => store.lastResult?.title || 'Result')
-
-const metaLine = computed(() => {
-  const m = store.lastResult?.metas || {}
-  const parts = []
-  if (m.bpm) parts.push(`${m.bpm} BPM`)
-  if (m.keyscale || m.key_scale) parts.push(m.keyscale || m.key_scale)
-  if (m.duration) parts.push(`${m.duration}s`)
-  return parts.join(' · ')
-})
+function onRefPick(e) {
+  const file = e.target.files?.[0]
+  store.refFile = file || null
+}
 
 function playItem(item) {
   store.lastResult = item
 }
 
-function reuseItem(item) {
-  store.loadFromLibrary(item)
-  $q.notify({ type: 'info', message: 'Loaded settings into Create' })
-}
-
-async function onDraftLyrics() {
+async function onDraft() {
   try {
     $q.loading.show({ message: 'Drafting lyrics…' })
     await store.formatLyrics({ fromConcept: true })
-    $q.notify({ type: 'positive', message: 'Lyrics drafted — edit placeholders as needed' })
+    $q.notify({ type: 'positive', message: 'Lyrics drafted' })
   } catch (err) {
     $q.notify({ type: 'negative', message: err.message, timeout: 8000 })
   } finally {
@@ -451,7 +310,7 @@ async function onFormat() {
   try {
     $q.loading.show({ message: 'Formatting…' })
     await store.formatLyrics()
-    $q.notify({ type: 'positive', message: 'Lyrics / caption formatted' })
+    $q.notify({ type: 'positive', message: 'Formatted' })
   } catch (err) {
     $q.notify({ type: 'negative', message: err.message })
   } finally {
@@ -468,12 +327,6 @@ async function onGenerate() {
     $q.notify({ type: 'negative', message: err.message, timeout: 10000 })
   }
 }
-</script>
 
-<style scoped>
-@media (max-width: 900px) {
-  .mode-toggle {
-    width: 100%;
-  }
-}
-</style>
+onBeforeUnmount(revokeLocalUrl)
+</script>

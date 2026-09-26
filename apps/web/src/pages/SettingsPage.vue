@@ -1,111 +1,58 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="ace-panel q-pa-md" style="max-width: 820px">
-      <div class="row items-center justify-between q-mb-md">
-        <div class="ace-page-title">Settings</div>
-        <q-btn outline dense icon="refresh" label="Recheck" class="ace-btn-ghost" @click="store.refreshHealth()" />
+  <div>
+    <header style="margin-bottom: 22px" class="row items-start justify-between">
+      <div>
+        <div class="studio-kicker">System</div>
+        <h1 class="studio-title">Settings</h1>
+        <p class="studio-lead">Engine, models, and optional integrations.</p>
+      </div>
+      <button class="btn btn-ghost" type="button" @click="store.refreshHealth()">Recheck</button>
+    </header>
+
+    <section class="glass glass-pad" style="max-width: 760px">
+      <div class="settings-list">
+        <div class="settings-row">
+          <div>
+            <strong>Engine</strong>
+            <p>{{ store.engine.ok ? 'Online' : 'Offline' }}<span v-if="store.engine.error"> — {{ store.engine.error }}</span></p>
+          </div>
+          <span class="dot" :class="store.engine.ok ? 'on' : 'off'" />
+        </div>
+        <div class="settings-row">
+          <div>
+            <strong>Configured DiT</strong>
+            <p>{{ models.configured_dit || models.default_model || '—' }}</p>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <strong>Language model</strong>
+            <p>
+              {{ models.configured_lm || '—' }}
+              · {{ models.init_llm ? 'enabled' : 'disabled in ACE .env' }}
+            </p>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <strong>SpaceXAI lyric assist</strong>
+            <p>{{ features.lyric_assist ? 'XAI_API_KEY detected' : 'Set XAI_API_KEY in repo .env' }}</p>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <strong>Demucs stems</strong>
+            <p>{{ features.demucs_stems ? 'Installed' : 'uv sync --extra stems' }}</p>
+          </div>
+        </div>
       </div>
 
-      <q-list dark bordered class="rounded-borders q-mb-md">
-        <q-item>
-          <q-item-section avatar>
-            <span class="engine-dot" :class="store.engine.ok ? 'ok' : 'down'" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Engine status</q-item-label>
-            <q-item-label caption>
-              {{ store.engine.ok ? 'Online' : 'Offline' }}
-              <span v-if="store.engine.error"> — {{ store.engine.error }}</span>
-            </q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item>
-          <q-item-section>
-            <q-item-label>Default / configured DiT</q-item-label>
-            <q-item-label caption class="text-primary">{{ models.configured_dit || models.default_model || '—' }}</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item>
-          <q-item-section>
-            <q-item-label>Configured LM</q-item-label>
-            <q-item-label caption>
-              {{ models.init_llm ? (models.configured_lm || '—') : `${models.configured_lm || '—'} (disabled — ACESTEP_INIT_LLM=false)` }}
-            </q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item>
-          <q-item-section>
-            <q-item-label>Loaded DiT</q-item-label>
-            <q-item-label caption>
-              {{ models.loaded_dit || (store.engine.ok ? 'Not loaded yet (lazy — loads on first Generate)' : 'Engine offline') }}
-            </q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item>
-          <q-item-section>
-            <q-item-label>Loaded LM</q-item-label>
-            <q-item-label caption>
-              {{ models.loaded_lm || (models.init_llm ? 'Not loaded yet' : 'Off') }}
-            </q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item>
-          <q-item-section>
-            <q-item-label>Initialized</q-item-label>
-            <q-item-label caption>
-              DiT: {{ models.models_initialized ? 'yes' : 'no' }} · LM: {{ models.llm_initialized ? 'yes' : 'no' }}
-            </q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item v-if="models.available?.length">
-          <q-item-section>
-            <q-item-label>Available from API</q-item-label>
-            <q-item-label caption>{{ models.available.join(', ') }}</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item>
-          <q-item-section>
-            <q-item-label>ACE-Step API</q-item-label>
-            <q-item-label caption>{{ store.engine.detail?.acestep_api_url || 'http://127.0.0.1:8001' }}</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item>
-          <q-item-section>
-            <q-item-label>SpaceXAI lyric assist</q-item-label>
-            <q-item-label caption>
-              {{ store.engine.detail?.features?.lyric_assist ? 'XAI_API_KEY detected' : 'Set XAI_API_KEY in repo .env' }}
-            </q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item>
-          <q-item-section>
-            <q-item-label>Demucs stems</q-item-label>
-            <q-item-label caption>
-              {{ store.engine.detail?.features?.demucs_stems ? 'Installed' : 'Run: uv sync --extra stems' }}
-            </q-item-label>
-          </q-item-section>
-        </q-item>
-      </q-list>
-
-      <q-banner dense rounded class="bg-grey-10 text-grey-4 q-mb-md">
-        Configured names come from <code>ACE-Step-1.5/.env</code>. Weights load on first Generate when
-        <code>ACESTEP_NO_INIT=true</code>. For Draft lyrics / Simple / Format, set
-        <code>ACESTEP_INIT_LLM=true</code> (needs enough RAM). Remix with your own or placeholder lyrics works with LM off.
-      </q-banner>
-
-      <div class="ace-panel-title q-mb-sm">Raw health</div>
-      <pre class="text-caption text-grey-5" style="white-space: pre-wrap; margin: 0">{{ pretty }}</pre>
-    </div>
-  </q-page>
+      <details style="margin-top: 18px">
+        <summary class="section-label" style="cursor: pointer">Raw health</summary>
+        <pre class="raw">{{ pretty }}</pre>
+      </details>
+    </section>
+  </div>
 </template>
 
 <script setup>
@@ -114,5 +61,40 @@ import { useStudioStore } from '@/stores/studio'
 
 const store = useStudioStore()
 const models = computed(() => store.engine.detail?.models || {})
+const features = computed(() => store.engine.detail?.features || {})
 const pretty = computed(() => JSON.stringify(store.engine.detail, null, 2))
 </script>
+
+<style scoped>
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.settings-row strong {
+  display: block;
+  font-size: 0.95rem;
+}
+.settings-row p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.raw {
+  margin: 10px 0 0;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--faint);
+  font-size: 0.75rem;
+  overflow: auto;
+}
+</style>

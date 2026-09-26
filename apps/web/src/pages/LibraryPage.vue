@@ -1,65 +1,54 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="ace-panel q-pa-md">
-      <div class="row items-center justify-between q-mb-md">
-        <div>
-          <div class="ace-page-title">Library</div>
-          <div class="ace-page-sub q-mt-xs">Local generations — export packs and stems</div>
-        </div>
-        <q-btn outline icon="refresh" label="Refresh" class="ace-btn-ghost" @click="reload" />
+  <div>
+    <header style="margin-bottom: 22px" class="row items-start justify-between">
+      <div>
+        <div class="studio-kicker">Collection</div>
+        <h1 class="studio-title">Library</h1>
+        <p class="studio-lead">Export packs, separate stems, reopen takes into Create.</p>
       </div>
+      <button class="btn btn-ghost" type="button" @click="reload">Refresh</button>
+    </header>
 
-      <q-banner v-if="!stemsReady" dense rounded class="bg-grey-10 text-grey-4 q-mb-md">
-        Stem separation needs Demucs: <code>cd apps/api && uv sync --extra stems</code>
-      </q-banner>
-
-      <q-table
-        dark
-        flat
-        :rows="store.library"
-        :columns="columns"
-        row-key="id"
-        :loading="loading"
-        binary-state-sort
-      >
-        <template #body-cell-actions="props">
-          <q-td :props="props">
-            <q-btn flat dense round icon="play_arrow" @click="play(props.row)">
-              <q-tooltip>Play in Create</q-tooltip>
-            </q-btn>
-            <q-btn flat dense round icon="download" :href="api.audioUrl(props.row.id)" target="_blank">
-              <q-tooltip>Download audio</q-tooltip>
-            </q-btn>
-            <q-btn flat dense round icon="folder_zip" :href="api.exportZipUrl(props.row.id)" target="_blank">
-              <q-tooltip>Export ZIP pack</q-tooltip>
-            </q-btn>
-            <q-btn
-              flat
-              dense
-              round
-              icon="graphic_eq"
-              :loading="stemBusy === props.row.id"
-              :disable="!stemsReady"
-              @click="makeStems(props.row)"
-            >
-              <q-tooltip>Separate stems (Demucs)</q-tooltip>
-            </q-btn>
-            <q-btn flat dense round icon="edit" @click="reuse(props.row)">
-              <q-tooltip>Reuse in Create</q-tooltip>
-            </q-btn>
-            <q-btn flat dense round icon="content_cut" @click="editSlice(props.row)">
-              <q-tooltip>Edit slice (waveform)</q-tooltip>
-            </q-btn>
-            <q-btn flat dense round icon="delete" color="negative" @click="remove(props.row)" />
-          </q-td>
-        </template>
-      </q-table>
+    <div v-if="!stemsReady" class="notice warn">
+      Stem separation needs Demucs — <code>cd apps/api && uv sync --extra stems</code>
     </div>
-  </q-page>
+
+    <section class="glass glass-pad">
+      <div v-if="loading" style="color: var(--muted)">Loading…</div>
+      <div v-else-if="!store.library.length" style="color: var(--faint); padding: 24px 8px">
+        No songs yet. Generate a remix to fill this space.
+      </div>
+      <div v-else class="lib-grid">
+        <article v-for="row in store.library" :key="row.id" class="lib-card">
+          <div class="lib-art" />
+          <div class="lib-body">
+            <h3>{{ row.title }}</h3>
+            <p>{{ row.mode }} · {{ row.created_at?.slice(0, 19) }}</p>
+            <div class="btn-row" style="margin-top: 12px">
+              <button class="btn btn-soft" type="button" @click="play(row)">Play</button>
+              <a class="btn btn-ghost" :href="api.audioUrl(row.id)" target="_blank">Audio</a>
+              <a class="btn btn-ghost" :href="api.exportZipUrl(row.id)" target="_blank">ZIP</a>
+              <button
+                class="btn btn-ghost"
+                type="button"
+                :disabled="!stemsReady || stemBusy === row.id"
+                @click="makeStems(row)"
+              >
+                {{ stemBusy === row.id ? 'Stems…' : 'Stems' }}
+              </button>
+              <button class="btn btn-ghost" type="button" @click="editSlice(row)">Edit</button>
+              <button class="btn btn-ghost" type="button" @click="reuse(row)">Reuse</button>
+              <button class="btn btn-danger" type="button" @click="remove(row)">Delete</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useStudioStore } from '@/stores/studio'
@@ -70,15 +59,7 @@ const router = useRouter()
 const $q = useQuasar()
 const loading = ref(false)
 const stemBusy = ref('')
-
 const stemsReady = computed(() => Boolean(store.engine.detail?.features?.demucs_stems))
-
-const columns = [
-  { name: 'created_at', label: 'Created', field: (r) => r.created_at?.slice(0, 19), sortable: true },
-  { name: 'mode', label: 'Mode', field: 'mode', sortable: true },
-  { name: 'title', label: 'Title', field: 'title', align: 'left', sortable: true },
-  { name: 'actions', label: '', field: 'id', align: 'right' },
-]
 
 async function reload() {
   loading.value = true
@@ -92,7 +73,6 @@ async function reload() {
 
 function play(row) {
   store.lastResult = row
-  router.push('/')
 }
 
 function reuse(row) {
@@ -105,7 +85,6 @@ function editSlice(row) {
   store.mode = 'edit'
   store.form.repainting_start = 0
   store.form.repainting_end = 0
-  // Use library audio as edit source via URL marker the Create page can load
   store.editSourceUrl = api.audioUrl(row.id)
   router.push('/')
 }
@@ -127,18 +106,12 @@ async function makeStems(row) {
   }
 }
 
-async function remove(row) {
-  $q.dialog({
-    title: 'Delete song?',
-    message: row.title,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
+function remove(row) {
+  $q.dialog({ title: 'Delete song?', message: row.title, cancel: true, persistent: true }).onOk(async () => {
     try {
       await api.deleteSong(row.id)
       if (store.lastResult?.id === row.id) store.lastResult = null
       await reload()
-      $q.notify({ type: 'positive', message: 'Deleted' })
     } catch (err) {
       $q.notify({ type: 'negative', message: err.message })
     }
@@ -147,3 +120,44 @@ async function remove(row) {
 
 onMounted(reload)
 </script>
+
+<style scoped>
+.lib-grid {
+  display: grid;
+  gap: 14px;
+}
+.lib-card {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+.lib-art {
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(196, 245, 66, 0.35), transparent 45%),
+    radial-gradient(circle at 70% 60%, rgba(124, 108, 240, 0.45), transparent 50%),
+    #0a0b10;
+}
+.lib-body h3 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+.lib-body p {
+  margin: 0;
+  color: var(--faint);
+  font-size: 0.82rem;
+}
+@media (max-width: 700px) {
+  .lib-card {
+    grid-template-columns: 1fr;
+  }
+  .lib-art {
+    height: 120px;
+  }
+}
+</style>
