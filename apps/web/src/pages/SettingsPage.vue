@@ -2,8 +2,8 @@
   <q-page class="q-pa-md">
     <div class="ace-panel q-pa-md" style="max-width: 820px">
       <div class="row items-center justify-between q-mb-md">
-        <div class="text-h6">Settings</div>
-        <q-btn outline dense color="primary" icon="refresh" label="Recheck" @click="store.refreshHealth()" />
+        <div class="ace-page-title">Settings</div>
+        <q-btn outline dense icon="refresh" label="Recheck" class="ace-btn-ghost" @click="store.refreshHealth()" />
       </div>
 
       <q-list dark bordered class="rounded-borders q-mb-md">

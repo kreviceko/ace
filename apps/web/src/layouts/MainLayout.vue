@@ -1,47 +1,44 @@
 <template>
-  <q-layout view="hHh LpR lFf" class="bg-dark-page text-white">
-    <q-header elevated class="bg-dark text-white" height-hint="64">
-      <q-toolbar class="q-px-md" style="min-height: 64px">
+  <q-layout view="hHh LpR lFf" class="text-white">
+    <q-header class="ace-shell-header" height-hint="68">
+      <q-toolbar class="q-px-md" style="min-height: 68px">
         <q-btn flat dense round icon="menu" class="lt-md" aria-label="Menu" @click="leftDrawer = !leftDrawer" />
 
         <div class="row items-center q-gutter-sm q-ml-xs">
-          <q-avatar size="36px" color="primary" text-color="white" font-size="18px">A</q-avatar>
+          <div class="ace-brand-mark">A</div>
           <div>
-            <div class="text-subtitle1 text-weight-bold" style="line-height: 1.1">ACE Studio</div>
-            <div class="text-caption text-grey-5">Local ACE-Step 1.5</div>
+            <div class="text-weight-bold" style="line-height: 1.1; letter-spacing: -0.02em">ACE Studio</div>
+            <div class="text-caption" style="color: var(--ace-faint)">Local music creation</div>
           </div>
         </div>
 
         <q-space />
 
-        <q-tabs
-          dense
-          active-color="primary"
-          indicator-color="primary"
-          class="text-grey-4 gt-sm"
-          narrow-indicator
-        >
-          <q-route-tab v-for="link in links" :key="link.to" v-bind="link" />
+        <q-tabs dense class="ace-nav-tabs gt-sm" active-color="primary" indicator-color="transparent">
+          <q-route-tab v-for="link in links" :key="link.to" :to="link.to" :label="link.label" :icon="link.icon" />
         </q-tabs>
 
         <q-space class="gt-sm" />
 
-        <div class="row items-center q-gutter-sm">
+        <div class="ace-status-pill">
           <span class="engine-dot" :class="store.engine.ok ? 'ok' : 'down'" />
           <div class="column gt-xs" style="line-height: 1.15">
-            <span class="text-caption text-grey-4">
+            <span class="text-caption" style="color: var(--ace-muted)">
               {{ store.engine.loading ? 'Checking…' : store.engine.ok ? 'Engine online' : 'Engine offline' }}
             </span>
-            <span v-if="modelCaption" class="text-caption text-grey-6">{{ modelCaption }}</span>
+            <span v-if="modelCaption" class="text-caption" style="color: var(--ace-faint)">{{ modelCaption }}</span>
           </div>
-          <q-btn flat dense round icon="refresh" @click="store.refreshHealth()" />
+          <q-btn flat dense round size="sm" icon="refresh" @click="store.refreshHealth()" />
         </div>
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawer" bordered overlay behavior="mobile" class="bg-dark text-white">
+    <q-drawer v-model="leftDrawer" bordered overlay behavior="mobile" class="ace-drawer text-white">
+      <div class="q-pa-md row items-center q-gutter-sm">
+        <div class="ace-brand-mark">A</div>
+        <div class="text-weight-bold">ACE Studio</div>
+      </div>
       <q-list padding>
-        <q-item-label header class="text-grey-5">Navigate</q-item-label>
         <q-item
           v-for="link in links"
           :key="link.to"

@@ -51,9 +51,9 @@ async function mountWave(url) {
     container: host.value,
     url,
     height: 96,
-    waveColor: '#64748b',
-    progressColor: '#8b5cf6',
-    cursorColor: '#22d3ee',
+    waveColor: '#52525b',
+    progressColor: '#ff7a59',
+    cursorColor: '#5eead4',
     normalize: true,
     plugins: [regions],
   })
@@ -66,7 +66,7 @@ async function mountWave(url) {
     region = regions.addRegion({
       start: s,
       end: Math.max(s + 0.5, e),
-      color: 'rgba(139, 92, 246, 0.25)',
+      color: 'rgba(255, 122, 89, 0.28)',
       drag: true,
       resize: true,
     })

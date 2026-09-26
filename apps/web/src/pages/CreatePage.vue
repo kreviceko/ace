@@ -3,8 +3,11 @@
     <div class="row q-col-gutter-md">
       <div class="col-12 col-lg-8">
         <div class="ace-panel q-pa-md">
-          <div class="row items-center justify-between q-mb-sm">
-            <div class="ace-panel-title">Create</div>
+          <div class="row items-start justify-between q-col-gutter-sm q-mb-md">
+            <div>
+              <div class="ace-page-title">Create</div>
+              <div class="ace-page-sub q-mt-xs">{{ modeHint }}</div>
+            </div>
             <q-btn-toggle
               v-model="store.mode"
               toggle-color="primary"
@@ -12,11 +15,9 @@
               dense
               no-caps
               :options="modeOptions"
-              class="bg-grey-10 mode-toggle"
+              class="mode-toggle"
             />
           </div>
-
-          <div class="text-caption text-grey-5 q-mb-md">{{ modeHint }}</div>
 
           <q-banner
             v-if="capabilityBanner"
@@ -253,20 +254,21 @@
               color="primary"
               icon="play_arrow"
               label="Generate"
-              class="q-px-lg"
+              class="ace-btn-primary q-px-lg"
               :loading="store.generating"
               :disable="!store.engineOnline"
               @click="onGenerate"
             />
             <q-btn
               v-if="store.generating"
-              flat
+              outline
               color="negative"
               icon="stop"
               label="Cancel wait"
+              class="ace-btn-ghost"
               @click="store.cancelGenerate()"
             />
-            <div v-if="store.jobStatus" class="text-caption text-grey-4">{{ store.jobStatus }}</div>
+            <div v-if="store.jobStatus" class="text-caption" style="color: var(--ace-muted)">{{ store.jobStatus }}</div>
           </div>
         </div>
       </div>
@@ -275,22 +277,22 @@
         <div class="ace-panel q-pa-md q-mb-md">
           <div class="ace-panel-title q-mb-sm">Now playing</div>
           <div v-if="currentAudioUrl" class="q-mb-sm">
-            <div class="text-subtitle2 q-mb-xs">{{ currentTitle }}</div>
-            <div v-if="metaLine" class="text-caption text-grey-5 q-mb-sm">{{ metaLine }}</div>
-            <audio :src="currentAudioUrl" controls style="width: 100%" />
+            <div class="text-subtitle1 text-weight-bold q-mb-xs">{{ currentTitle }}</div>
+            <div v-if="metaLine" class="text-caption q-mb-sm" style="color: var(--ace-teal)">{{ metaLine }}</div>
+            <audio :src="currentAudioUrl" controls style="width: 100%; border-radius: 12px" />
             <div class="row q-gutter-sm q-mt-sm">
               <q-btn
                 dense
                 outline
-                color="grey-5"
                 icon="download"
                 label="Download"
+                class="ace-btn-ghost"
                 :href="currentAudioUrl"
                 target="_blank"
               />
             </div>
           </div>
-          <div v-else class="text-grey-6 text-body2">
+          <div v-else class="text-body2" style="color: var(--ace-muted)">
             {{ emptyPlayerHint }}
           </div>
         </div>
@@ -469,11 +471,7 @@ async function onGenerate() {
 </script>
 
 <style scoped>
-.mode-toggle :deep(.q-btn) {
-  font-size: 12px;
-  padding: 0 10px;
-}
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .mode-toggle {
     width: 100%;
   }

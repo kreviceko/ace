@@ -3,10 +3,10 @@
     <div class="ace-panel q-pa-md">
       <div class="row items-center justify-between q-mb-md">
         <div>
-          <div class="text-h6">Library</div>
-          <div class="text-caption text-grey-5">Local generations — export packs and stems</div>
+          <div class="ace-page-title">Library</div>
+          <div class="ace-page-sub q-mt-xs">Local generations — export packs and stems</div>
         </div>
-        <q-btn outline color="primary" icon="refresh" label="Refresh" @click="reload" />
+        <q-btn outline icon="refresh" label="Refresh" class="ace-btn-ghost" @click="reload" />
       </div>
 
       <q-banner v-if="!stemsReady" dense rounded class="bg-grey-10 text-grey-4 q-mb-md">

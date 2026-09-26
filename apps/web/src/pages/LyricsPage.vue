@@ -3,8 +3,8 @@
     <div class="row q-col-gutter-md">
       <div class="col-12 col-md-7">
         <div class="ace-panel q-pa-md">
-          <div class="text-h6 q-mb-xs">Lyrics lab</div>
-          <div class="text-caption text-grey-5 q-mb-md">
+          <div class="ace-page-title q-mb-xs">Lyrics lab</div>
+          <div class="ace-page-sub q-mb-md">
             Draft from a concept, keep syllable placeholders for melody timing, then send to Remix.
           </div>
 
@@ -70,8 +70,8 @@
               :disable="!store.lmAvailable"
               @click="formatAce"
             />
-            <q-btn unelevated color="primary" icon="arrow_forward" label="Use in Remix" @click="toRemix" />
-            <q-btn flat color="grey-5" label="Custom" @click="toCustom" />
+            <q-btn unelevated color="primary" icon="arrow_forward" label="Use in Remix" class="ace-btn-primary" @click="toRemix" />
+            <q-btn outline class="ace-btn-ghost" label="Custom" @click="toCustom" />
           </div>
         </div>
       </div>

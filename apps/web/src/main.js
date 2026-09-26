@@ -21,11 +21,13 @@ app.use(Quasar, {
   iconSet,
   config: {
     brand: {
-      primary: '#8b5cf6',
-      secondary: '#22d3ee',
-      accent: '#f472b6',
-      dark: '#0b0f19',
-      'dark-page': '#070a12',
+      primary: '#ff7a59',
+      secondary: '#5eead4',
+      accent: '#fbbf24',
+      dark: '#12141c',
+      'dark-page': '#07080d',
+      positive: '#4ade80',
+      negative: '#fb7185',
     },
     dark: true,
   },
